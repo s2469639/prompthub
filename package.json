@@ -1,0 +1,8 @@
+{
+  "name": "prompt-hub",
+  "version": "1.0.0",
+  "description": "PromptHub AI Guide & Builder",
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}

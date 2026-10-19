@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptHub - AI Prompt Guide & Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; background-color: #F7F6F2; color: #202722; }
+        .highlight-var { background-color: #C8F169; padding: 0.1rem 0.3rem; border-radius: 0.25rem; font-weight: bold; }
+        .tab-active { border-bottom: 2px solid #263B52; font-weight: bold; color: #263B52; }
+        .tab-inactive { color: #68716B; }
+        .tab-inactive:hover { color: #263B52; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #E5E4DC; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #68716B; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <nav class="bg-white border-b border-[#E5E4DC] sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16">
+            <div class="flex items-center">
+                <i class="fa-solid fa-layer-group text-[#263B52] text-2xl mr-3"></i>
+                <span class="font-bold text-xl text-[#263B52]">PromptHub</span>
+            </div>
+            <div class="flex items-center space-x-2 md:space-x-6">
+                <button onclick="switchTab('guide')" id="tab-guide" class="tab-active px-2 py-4 text-sm focus:outline-none">가이드 (Library)</button>
+                <button onclick="switchTab('builder')" id="tab-builder" class="tab-inactive px-2 py-4 text-sm focus:outline-none">생성기 (Builder)</button>
+                <div class="relative group">
+                    <button class="text-[#68716B] hover:text-[#263B52] text-sm font-bold border border-[#E5E4DC] px-3 py-1.5 rounded-lg"><i class="fa-solid fa-database mr-2"></i>데이터 관리</button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block z-50">
+                        <button onclick="exportJSON()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 border-b"><i class="fa-solid fa-download mr-2"></i>백업 (내보내기)</button>
+                        <label class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+                            <i class="fa-solid fa-upload mr-2"></i>복구 (가져오기)
+                            <input type="file" id="importFile" accept=".json" class="hidden" onchange="importJSON(event)">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <!-- 가이드 탭 -->
+        <div id="view-guide" class="block">
+            <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <h1 class="text-2xl font-bold text-[#202722]">프롬프트 탐색</h1>
+                <input type="text" id="searchInput" onkeyup="filterPrompts()" placeholder="검색어 입력..." class="w-full md:w-80 px-4 py-2 border border-[#E5E4DC] rounded-lg text-sm focus:outline-none focus:border-[#263B52]">
+            </div>
+            
+            <div class="bg-white p-4 rounded-xl border border-[#E5E4DC] shadow-sm mb-8 space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-bold text-gray-500 w-16">분야</span>
+                    <button onclick="setDomain('all')" id="dom-all" class="filter-btn-dom px-3 py-1 bg-[#263B52] text-white rounded-full text-sm font-medium">전체</button>
+                    <button onclick="setDomain('trade')" id="dom-trade" class="filter-btn-dom px-3 py-1 bg-white border border-[#E5E4DC] text-[#68716B] rounded-full text-sm font-medium">무역 업무</button>
+                    <button onclick="setDomain('coding')" id="dom-coding" class="filter-btn-dom px-3 py-1 bg-white border border-[#E5E4DC] text-[#68716B] rounded-full text-sm font-medium">바이브 코딩</button>
+                    <button onclick="setDomain('general')" id="dom-general" class="filter-btn-dom px-3 py-1 bg-white border border-[#E5E4DC] text-[#68716B] rounded-full text-sm font-medium">일반/기획</button>
+                    <div class="w-px h-4 bg-[#E5E4DC] mx-2"></div>
+                    <button onclick="toggleFavFilter()" id="fav-filter" class="px-3 py-1 bg-white border border-[#E5E4DC] text-[#68716B] rounded-full text-sm font-medium"><i class="fa-solid fa-star mr-1"></i>즐겨찾기</button>
+                </div>
+            </div>
+            <div id="emptyState" class="hidden text-center py-12 text-gray-500">조건에 맞는 프롬프트가 없습니다.</div>
+            <div id="promptGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- 빌더 탭 -->
+        <div id="view-builder" class="hidden">
+            <h1 class="text-2xl font-bold mb-6">동적 프롬프트 빌더</h1>
+            <div class="flex flex-col lg:flex-row gap-8">
+                <div class="w-full lg:w-5/12 bg-white p-6 rounded-xl border border-[#E5E4DC] shadow-sm flex flex-col">
+                    <h2 class="text-lg font-bold mb-4 border-b pb-2"><i class="fa-solid fa-sliders mr-2"></i>프레임워크 선택</h2>
+                    <select id="frameworkSelect" onchange="renderDynamicForm()" class="w-full p-2 mb-6 border border-[#E5E4DC] rounded-lg bg-gray-50 focus:border-[#263B52] font-bold">
+                        <option value="RTCC">RTCC (Role-Task-Context-Constraints)</option>
+                        <option value="COSTAR">CO-STAR (비즈니스 제안/마케팅)</option>
+                        <option value="RISEN">R-I-S-E-N (코딩/명확한 작업 지시)</option>
+                        <option value="FREE">자유 입력 (초안 개선형)</option>
+                    </select>
+                    <div id="dynamicFormContainer" class="space-y-4 flex-grow overflow-y-auto"></div>
+                    <button onclick="generatePromptWithAPI()" class="w-full mt-6 bg-[#263B52] text-white py-3 rounded-lg font-bold hover:bg-opacity-90 transition">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Gemini AI로 최적화
+                    </button>
+                </div>
+
+                <div class="w-full lg:w-7/12 flex flex-col gap-4">
+                    <div class="bg-white p-6 rounded-xl border border-[#E5E4DC] shadow-sm flex-grow flex flex-col">
+                        <div class="flex justify-between items-end mb-4 border-b pb-2">
+                            <div class="flex space-x-4">
+                                <button onclick="switchResultTab('ai')" id="res-tab-ai" class="font-bold text-[#263B52] border-b-2 border-[#263B52] pb-1">AI 최적화 프롬프트</button>
+                                <button onclick="switchResultTab('raw')" id="res-tab-raw" class="text-gray-400 hover:text-[#263B52] pb-1">내 입력 원본</button>
+                            </div>
+                            <button onclick="copyBuilderResult()" class="text-sm bg-[#C8F169] text-[#202722] px-3 py-1 rounded font-bold hover:bg-[#b8e058]">복사</button>
+                        </div>
+                        <div id="builderResultContainer" class="relative flex-grow">
+                            <textarea id="builderResultAI" class="w-full h-full min-h-[400px] p-4 bg-gray-50 rounded-lg font-mono text-sm text-gray-800 border border-gray-200 resize-none" readonly>좌측 폼을 작성하고 생성 버튼을 누르면, AI가 분석한 결과가 나옵니다.</textarea>
+                            <textarea id="builderResultRaw" class="w-full h-full min-h-[400px] p-4 bg-gray-50 rounded-lg font-mono text-sm text-gray-500 border border-gray-200 resize-none hidden" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 모달 -->
+    <div id="varModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="p-5 border-b border-[#E5E4DC] flex justify-between items-center bg-gray-50 rounded-t-xl">
+                <h3 class="font-bold text-lg" id="modalTitle"><i class="fa-solid fa-pen-to-square mr-2"></i>프롬프트 변수 입력</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-black"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow flex flex-col md:flex-row gap-6">
+                <div class="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-[#E5E4DC] pb-4 md:pb-0 md:pr-4" id="modalVars"></div>
+                <div class="w-full md:w-2/3 flex flex-col">
+                    <div class="flex justify-between items-center mb-2"><span class="font-bold text-sm text-[#68716B]">실시간 미리보기</span></div>
+                    <div id="modalPreview" class="bg-gray-50 p-4 rounded-lg font-mono text-sm text-gray-700 whitespace-pre-wrap h-64 overflow-y-auto border border-gray-200"></div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-[#E5E4DC] bg-gray-50 flex justify-end gap-3 rounded-b-xl">
+                <button onclick="closeModal()" class="px-4 py-2 text-sm border bg-white rounded-lg">취소</button>
+                <button onclick="copyModalContent()" class="px-5 py-2 text-sm bg-[#263B52] text-white rounded-lg"><i class="fa-solid fa-copy mr-2"></i>복사</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#263B52] text-white px-6 py-3 rounded-full shadow-lg transition-opacity duration-300 opacity-0 z-50"><span id="toastMsg">복사되었습니다!</span></div>
+
+    <script src="/js/data.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
