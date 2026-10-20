@@ -106,12 +106,15 @@ async function generatePromptWithAPI() {
             body: JSON.stringify({ framework: fw, formData: formData })
         });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error);
+        if (!response.ok) {
+            const detailMsg = result.details ? `\n상세 내용: ${result.details}` : '';
+            throw new Error((result.error || '알 수 없는 서버 오류') + detailMsg);
+        }
 
         document.getElementById('builderResultRaw').value = result.rawPrompt;
         document.getElementById('builderResultAI').value = result.optimizedPrompt;
     } catch (error) {
-        document.getElementById('builderResultAI').value = `오류 발생: ${error.message}\n.env에 API 키를 등록하고 Vercel 환경에서 실행 중인지 확인하세요.`;
+        document.getElementById('builderResultAI').value = `오류 발생: ${error.message}\n\n[확인 사항]\n1. Vercel 환경변수에 GEMINI_API_KEY 등록 여부\n2. 환경변수 추가 후 Vercel 재배포(Redeploy) 여부\n3. API 키 권한 및 유효성`;
     } finally {
         btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Gemini AI로 최적화';
         btn.classList.remove('opacity-50', 'pointer-events-none');

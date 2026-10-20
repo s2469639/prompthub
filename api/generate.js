@@ -33,10 +33,23 @@ export default async function handler(req, res) {
             })
         });
 
-        if (!response.ok) throw new Error(`API 오류: ${response.status}`);
+        if (!response.ok) {
+            const errorBody = await response.text();
+            return res.status(response.status).json({
+                error: `Gemini API 호출 실패 (상태 코드 ${response.status})`,
+                details: errorBody
+            });
+        }
         
         const data = await response.json();
-        const optimizedText = data.candidates[0].content.parts[0].text;
+        const optimizedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!optimizedText) {
+            return res.status(500).json({
+                error: 'AI 응답 형식이 올바르지 않거나 차단되었습니다.',
+                details: JSON.stringify(data)
+            });
+        }
 
         return res.status(200).json({ 
             rawPrompt: rawPrompt, 
@@ -44,6 +57,6 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message, details: error.stack });
     }
 }
