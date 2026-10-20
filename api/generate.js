@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 2. 불확실한 부분을 채워주기 위해 필요한 경우에만 Few-shot 예시를 추가하세요.
 3. 결과물은 반드시 Markdown 구조로 반환하며, 불필요한 부연 설명이나 인사말은 절대 하지 마세요.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     try {
         const response = await fetch(url, {
