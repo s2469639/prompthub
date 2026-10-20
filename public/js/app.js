@@ -114,9 +114,9 @@ async function generatePromptWithAPI() {
         document.getElementById('builderResultRaw').value = result.rawPrompt;
         document.getElementById('builderResultAI').value = result.optimizedPrompt;
     } catch (error) {
-        document.getElementById('builderResultAI').value = `오류 발생: ${error.message}\n\n[확인 사항]\n1. Vercel 환경변수에 GEMINI_API_KEY 등록 여부\n2. 환경변수 추가 후 Vercel 재배포(Redeploy) 여부\n3. API 키 권한 및 유효성`;
+        document.getElementById('builderResultAI').value = `오류 발생: ${error.message}\n\n[확인 사항]\n1. Vercel 환경변수에 OPENAI_API_KEY 등록 여부\n2. 환경변수 추가 후 Vercel 재배포(Redeploy) 여부\n3. OpenAI API 잔여 크레딧 및 키 권한`;
     } finally {
-        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Gemini AI로 최적화';
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AI로 최적화';
         btn.classList.remove('opacity-50', 'pointer-events-none');
     }
 }
